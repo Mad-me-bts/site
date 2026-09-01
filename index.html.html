@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de Club de Foot</title>
+    <style>
+        :root {
+            --primary: #2e7d32;
+            --dark: #1b5e20;
+            --light: #f4f6f4;
+            --text: #333;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--light);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+        }
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h2 { color: var(--dark); margin-top: 0; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover { background-color: var(--dark); }
+        .grid-listes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        ul { padding-left: 20px; margin: 5px 0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th { background-color: var(--primary); color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .btn-delete {
+            background-color: #d32f2f;
+            padding: 5px 10px;
+            font-size: 12px;
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Club de Football - Inscriptions</h1>
+    </header>
+
+    <!-- 1. FORMULAIRE D'INSCRIPTION -->
+    <div class="card">
+        <h2>Fiche d'Inscription</h2>
+        <form id="footForm">
+            <div class="form-group">
+                <label for="nom">Nom :</label>
+                <input type="text" id="nom" required placeholder="Ex: RIVERA">
+            </div>
+            <div class="form-group">
+                <label for="prenom">Prénom :</label>
+                <input type="text" id="prenom" required placeholder="Ex: Lucas">
+            </div>
+            <div class="form-group">
+                <label for="annee">Année de naissance :</label>
+                <input type="number" id="annee" min="1950" max="2026" required placeholder="Ex: 2012">
+            </div>
+            <div class="form-group">
+                <label for="poste">Poste sur le terrain :</label>
+                <select id="poste" required>
+                    <option value="">-- Choisir un poste --</option>
+                    <option value="Gardien">Gardien de but</option>
+                    <option value="Défenseur">Défenseur</option>
+                    <option value="Milieu">Milieu de terrain</option>
+                    <option value="Attaquant">Attaquant</option>
+                </select>
+            </div>
+            <button type="submit">Inscrire le joueur</button>
+        </form>
+    </div>
+
+    <!-- 2. RÈGLES ET CONFIGURATION DES DONNÉES -->
+    <div class="card grid-listes">
+        <div>
+            <h3>📋 Postes Disponibles</h3>
+            <ul>
+                <li>Gardien de but</li>
+                <li>Défenseur</li>
+                <li>Milieu de terrain</li>
+                <li>Attaquant</li>
+            </ul>
+        </div>
+        <div>
+            <h3>🎂 Catégories d'Âges</h3>
+            <ul>
+                <li>U11 (Moins de 11 ans)</li>
+                <li>U15 (11 à 14 ans)</li>
+                <li>U18 (15 à 17 ans)</li>
+                <li>Sénior (18 ans et plus)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 3. GESTION ET TABLEAU DES DONNÉES -->
+    <div class="card">
+        <h2>Base de Données des Joueurs (<span id="totalJoueurs">0</span>)</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nom & Prénom</th>
+                        <th>Âge</th>
+                        <th>Poste</th>
+                        <th>Catégorie</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableauJoueurs">
+                    <!-- Les joueurs inscrits s'afficheront ici -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Récupération des données sauvegardées dans le téléphone
+    let listeJoueurs = JSON.parse(localStorage.getItem('club_foot_joueurs')) || [];
+
+    // Formulaire et Tableau
+    const form = document.getElementById('footForm');
+    const tbody = document.getElementById('tableauJoueurs');
+    const totalSpan = document.getElementById('totalJoueurs');
+
+    // Calcul automatique de la catégorie selon l'âge
+    function obtenirCategorie(age) {
+        if (age < 11) return "U11 (Poussin/Benjamin)";
+        if (age < 15) return "U15 (Minime/Cadet)";
+        if (age < 18) return "U18 (Junior)";
+        return "Sénior (Majeur)";
+    }
+
+    // Mettre à jour l'affichage de la gestion des données
+    function rafraichirTableau() {
+        tbody.innerHTML = "";
+        totalSpan.textContent = listeJoueurs.length;
+
+        listeJoueurs.forEach((joueur, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${joueur.nom}</strong> ${joueur.prenom}</td>
+                <td>${joueur.age} ans</td>
+                <td>${joueur.poste}</td>
+                <td>${joueur.categorie}</td>
+                <td><button class="btn-delete" onclick="supprimerJoueur(${index})">Supprimer</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Sauvegarde locale persistante
+        localStorage.setItem('club_foot_joueurs', JSON.stringify(listeJoueurs));
+    }
+
+    // Gestion de la soumission du formulaire
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const nom = document.getElementById('nom').value.trim().toUpperCase();
+        const prenom = document.getElementById('prenom').value.trim();
+        const annee = parseInt(document.getElementById('annee').value);
+        const poste = document.getElementById('poste').value;
+
+        const anneeActuelle = new Date().getFullYear();
+        const age = anneeActuelle - annee;
+        const categorie = obtenirCategorie(age);
+
+        const nouveauJoueur = { nom, prenom, age, poste, categorie };
+        
+        listeJoueurs.push(nouveauJoueur);
+        rafraichirTableau();
+        form.reset(); // Vide le formulaire
+    });
+
+    // Supprimer un joueur de la liste
+    window.supprimerJoueur = function(index) {
+        if(confirm("Supprimer ce joueur de la base de données ?")) {
+            listeJoueurs.splice(index, 1);
+            rafraichirTableau();
+        }
+    }
+
+    // Charger les données existantes au démarrage
+    rafraichirTableau();
+</script>
+
+</body>
+</html>
